@@ -33,13 +33,14 @@ Il progetto adotta un'architettura client-server per gestire in modo centralizza
 
 - **Gestione concorrente tramite thread**  
   Ogni nuova connessione da parte di un client viene gestita tramite un nuovo `thread`, consentendo richieste simultanee da più utenti in parallelo.
+  L'accesso al buffer `posti`, che è una risorsa condivisa, viene gestito da un semaforo di tipo mutex.
 
 - **Modello dati semplice e diretto**  
   La sala è rappresentata come una matrice 10x20 di strutture `Posto`, ciascuna con attributi per fila, poltrona, stato di occupazione e codice di prenotazione.
 
 ### ⚙️ Tecniche e Metodologie Utilizzate
 
-- **Scambio dati minimale ed efficiente**  
+- **Scambio dati minimale ed efficiente**
   I comandi tra client e server sono codificati come caratteri (`'a'`, `'b'`, `'s'`), con payload minimali per ridurre la complessità e migliorare le performance.
 
 - **Visualizzazione intuitiva lato client**  
@@ -47,4 +48,12 @@ Il progetto adotta un'architettura client-server per gestire in modo centralizza
 
 - **Gestione dei codici prenotazione**  
   Ogni prenotazione viene identificata da un codice alfanumerico generato casualmente e trasmesso al client, che lo usa anche per eventuali disdette.
+
+## 📖 Manuale d'uso
+
+### ⚙️ Compilazione
+Per la compilazione, utilizzare il comando `gcc server.c -o server` e `gcc client.c -o client`.
+
+
+
 
