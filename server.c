@@ -29,6 +29,7 @@ typedef struct {
 
 struct sockaddr_in server_addr;
 Posto posti[FILE][POLTRONE];
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 void gencode(int fila, int poltrona) {
     char code[11];
@@ -44,6 +45,7 @@ void* client_handler(void* cs) {
     int client_s = *((int*)cs);
     free(cs);
     char packet[0xFF];
+
     while(true) {
         ssize_t msg_len = recv(client_s, packet, sizeof(packet), 0);
         if (msg_len == 0) {
@@ -55,6 +57,7 @@ void* client_handler(void* cs) {
             int fila_req = packet[1];
             int poltrona_req = packet[2];
 
+            pthread_mutex_lock(&lock);
             if (fila_req >= FILE || poltrona_req >= POLTRONE) {
                 printf("Posto inesistente!\n");
             } else if (posti[fila_req][poltrona_req].occupato == false) {
@@ -66,6 +69,8 @@ void* client_handler(void* cs) {
                 printf("Posto occupato!\n");
             }
             fflush(stdout);
+            pthread_mutex_unlock(&lock);
+
         } else if(packet[0] == 98) { // 'b' = DISDIRE
             char codice[11];
             bool trovato;
@@ -73,8 +78,8 @@ void* client_handler(void* cs) {
                 codice[i] = packet[i+1];
             }
             codice[10] = '\0';
-
-
+        
+            pthread_mutex_lock(&lock);
             for (int i = 0; i < FILE; i++) {
                 for (int j = 0; j < POLTRONE; j++) {
                     if (strcmp(posti[i][j].codice, codice) == 0) {
@@ -86,20 +91,24 @@ void* client_handler(void* cs) {
                     }
                 }
             }
+            pthread_mutex_unlock(&lock);
 
             if (!trovato) {
                 printf("Prenotazione non esistente!\n");
                 send(client_s, "NO", 10, 0);
             }
 
-        } else if(packet[0] == 115) {
+        } else if(packet[0] == 115) { // s: manda mappa dei posti aggiornata al client
             char mappa[FILE*POLTRONE];
+
+            pthread_mutex_lock(&lock);
             for(int i = 0; i < FILE; i++){
                 for(int j = 0; j < POLTRONE; j++){
                     mappa[i*POLTRONE + j] = posti[i][j].occupato ? '1' : '0';
                 }
             }
             send(client_s, mappa, FILE*POLTRONE, 0);
+            pthread_mutex_unlock(&lock);
         }
         memset(packet, 0, 0xFF);
     }
